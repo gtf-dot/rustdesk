@@ -109,8 +109,9 @@ jobs:
           cd "$FLUTTER_DIR"
           git checkout -- . 2>/dev/null || true
           if [[ "3.24.5" == ${{env.FLUTTER_VERSION}} ]]; then
-            git apply $GITHUB_WORKSPACE/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff || \
-            patch -p1 --forward < $GITHUB_WORKSPACE/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff || true
+            git apply $GITHUB_WORKSPACE/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff 2>/dev/null || \
+              patch -p1 --forward < $GITHUB_WORKSPACE/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff 2>/dev/null || \
+              echo "Patch already applied or not needed"
           fi
 
       - name: Install Rust toolchain
