@@ -20,7 +20,7 @@ jobs:
         job:
           - {
               target: x86_64-unknown-linux-gnu,
-              os: self-hosted,
+              os: [self-hosted, Linux],
               extra-build-args: "",
             }
     steps:
