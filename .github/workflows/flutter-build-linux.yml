@@ -66,32 +66,10 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - name: Maximize build space
-        run: |
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/dotnet
-          sudo apt-get update -y
-          sudo apt-get install -y nasm
-          if [[ "${{ matrix.job.arch }}" == "x86_64" ]]; then
-            sudo apt-get install -y qemu-user-static
-          fi
-
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: Set Swap Space
-        if: ${{ matrix.job.arch == 'x86_64' }}
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 12
-
-      - name: Free Space
-        run: |
-          df -h
-          free -m
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@v1
