@@ -59,6 +59,10 @@ jobs:
               vcpkg-triplet: arm64-linux,
             }
     steps:
+      - name: Fix permissions
+        run: |
+          sudo chown -R $(whoami) . || true
+
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@v6
         with:
