@@ -13,23 +13,34 @@ env:
 
 jobs:
   generate_bridge:
-    runs-on: ${{ matrix.job.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        job:
-          - {
-              target: x86_64-unknown-linux-gnu,
-              os: [self-hosted, Linux],
-              extra-build-args: "",
-            }
+    runs-on: [self-hosted, Linux]
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
+      - name: Check bridge cache
+        id: bridge-cache
+        run: |
+          if [ -d /opt/bridge-cache ] && [ -f /opt/bridge-cache/bridge_generated.rs ]; then
+            echo "cache-hit=true" >> $GITHUB_OUTPUT
+          else
+            echo "cache-hit=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Restore bridge from local cache
+        if: steps.bridge-cache.outputs.cache-hit == 'true'
+        run: |
+          cp /opt/bridge-cache/bridge_generated.rs ./src/
+          cp /opt/bridge-cache/bridge_generated.io.rs ./src/
+          cp /opt/bridge-cache/generated_bridge.dart ./flutter/lib/
+          cp /opt/bridge-cache/generated_bridge.freezed.dart ./flutter/lib/
+          cp /opt/bridge-cache/bridge_generated.h ./flutter/macos/Runner/
+          cp /opt/bridge-cache/bridge_generated.h ./flutter/ios/Runner/
+
       - name: Install prerequisites
+        if: steps.bridge-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get install ca-certificates -y
           sudo apt-get update -y
@@ -49,31 +60,22 @@ jobs:
             wget
 
       - name: Install Rust toolchain
+        if: steps.bridge-cache.outputs.cache-hit != 'true'
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ env.RUST_VERSION }}
-          targets: ${{ matrix.job.target }}
+          targets: x86_64-unknown-linux-gnu
           components: "rustfmt"
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          prefix-key: bridge-${{ matrix.job.os }}
-
-      - name: Cache Bridge
-        id: cache-bridge
-        uses: actions/cache@v3
-        with:
-          path: /tmp/flutter_rust_bridge
-          key: vcpkg-${{ matrix.job.arch }}
-
       - name: Install flutter
+        if: steps.bridge-cache.outputs.cache-hit != 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
 
       - name: Install flutter rust bridge deps
+        if: steps.bridge-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           cargo install cargo-expand --version ${{ env.CARGO_EXPAND_VERSION }} --locked
@@ -81,9 +83,21 @@ jobs:
           pushd flutter && sed -i -e 's/extended_text: 14.0.0/extended_text: 13.0.0/g' pubspec.yaml && flutter pub get && popd
 
       - name: Run flutter rust bridge
+        if: steps.bridge-cache.outputs.cache-hit != 'true'
         run: |
           ~/.cargo/bin/flutter_rust_bridge_codegen --rust-input ./src/flutter_ffi.rs --dart-output ./flutter/lib/generated_bridge.dart --c-output ./flutter/macos/Runner/bridge_generated.h
           cp ./flutter/macos/Runner/bridge_generated.h ./flutter/ios/Runner/bridge_generated.h
+
+      - name: Save bridge to local cache
+        if: steps.bridge-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /opt/bridge-cache
+          cp ./src/bridge_generated.rs /opt/bridge-cache/
+          cp ./src/bridge_generated.io.rs /opt/bridge-cache/
+          cp ./flutter/lib/generated_bridge.dart /opt/bridge-cache/
+          cp ./flutter/lib/generated_bridge.freezed.dart /opt/bridge-cache/
+          cp ./flutter/macos/Runner/bridge_generated.h /opt/bridge-cache/
+          cp ./flutter/ios/Runner/bridge_generated.h /opt/bridge-cache/
 
       - name: Upload Artifact
         uses: actions/upload-artifact@master
