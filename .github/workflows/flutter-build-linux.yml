@@ -61,7 +61,7 @@ jobs:
     steps:
       - name: Fix permissions
         run: |
-          sudo chown -R $(whoami) ${{ github.workspace }} || true
+          sudo chown -R $(whoami) ${{ runner.workspace }} || true
 
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@v6
@@ -301,6 +301,11 @@ jobs:
         with:
           name: rustdesk-executable-${{ matrix.job.arch }}
           path: flutter/build/linux/x64/release/bundle/rustdesk
+
+      - name: Fix permissions for post-job cleanup
+        if: always()
+        run: |
+          sudo chown -R $(whoami) ${{ runner.workspace }} || true
 
   build-appimage:
     name: Build appimage ${{ matrix.job.target }}
