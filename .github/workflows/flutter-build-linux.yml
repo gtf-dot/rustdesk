@@ -295,12 +295,12 @@ jobs:
           name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
           path: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
 
-      - name: Upload rustdesk executable
+      - name: Upload rustdesk bundle
         uses: actions/upload-artifact@master
         if: env.UPLOAD_ARTIFACT == 'true'
         with:
-          name: rustdesk-executable-${{ matrix.job.arch }}
-          path: flutter/build/linux/x64/release/bundle/rustdesk
+          name: rustdesk-bundle-${{ matrix.job.arch }}
+          path: flutter/build/linux/x64/release/bundle/
 
       - name: Fix permissions for post-job cleanup
         if: always()
