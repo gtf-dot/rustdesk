@@ -59,10 +59,6 @@ jobs:
               vcpkg-triplet: arm64-linux,
             }
     steps:
-      - name: Fix permissions
-        run: |
-          sudo chown -R $(whoami) ${{ runner.workspace }} || true
-
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@v6
         with:
@@ -301,11 +297,6 @@ jobs:
         with:
           name: rustdesk-bundle-${{ matrix.job.arch }}
           path: flutter/build/linux/x64/release/bundle/
-
-      - name: Fix permissions for post-job cleanup
-        if: always()
-        run: |
-          sudo chown -R $(whoami) ${{ runner.workspace }} || true
 
   build-appimage:
     name: Build appimage ${{ matrix.job.target }}
