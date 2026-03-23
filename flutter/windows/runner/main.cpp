@@ -49,6 +49,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     argument.erase(argument.find_last_not_of(" \n\r\t"));
   }
 
+  // Attach to parent console early so that CLI commands like --get-id
+  // can write to stdout before core_main returns.
+  bool attached_to_console = ::AttachConsole(ATTACH_PARENT_PROCESS);
+  if (attached_to_console) {
+    FILE *unused;
+    freopen_s(&unused, "CONOUT$", "w", stdout);
+    freopen_s(&unused, "CONOUT$", "w", stderr);
+  }
+
   int args_len = 0;
   char** c_args = rustdesk_core_main(&args_len);
   if (!c_args)
@@ -63,7 +72,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   std::vector<std::string> rust_args(c_args, c_args + args_len);
   free_c_args(c_args, args_len);
 
-  std::wstring app_name = L"RustDesk";
+  std::wstring app_name = L"HorusRD";
   FUNC_RUSTDESK_GET_APP_NAME get_rustdesk_app_name = (FUNC_RUSTDESK_GET_APP_NAME)GetProcAddress(hInstance, "get_rustdesk_app_name");
   if (get_rustdesk_app_name) {
     wchar_t app_name_buffer[512] = {0};
@@ -99,9 +108,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     }
   }
 
-  // Attach to console when present (e.g., 'flutter run') or create a
-  // new console when running with a debugger.
-  if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent())
+  // Create a new console when running with a debugger.
+  // Note: AttachConsole(ATTACH_PARENT_PROCESS) is already called earlier
+  // (before core_main) so CLI commands can write to stdout.
+  if (::IsDebuggerPresent() && !::GetConsoleWindow())
   {
     CreateAndAttachConsole();
   }
