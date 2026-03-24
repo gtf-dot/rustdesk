@@ -39,6 +39,8 @@ env:
   #signing keys env variable checks
   ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
   UPLOAD_ARTIFACT: "${{ inputs.upload-artifact }}"
+  RENDEZVOUS_SERVERS: "${{ secrets.RENDEZVOUS_SERVERS }}"
+  RS_PUB_KEY: "${{ secrets.RS_PUB_KEY }}"
 
 jobs:
   generate-bridge:
