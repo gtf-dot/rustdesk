@@ -9,7 +9,6 @@ import shutil
 import hashlib
 import argparse
 import sys
-from pathlib import Path
 
 windows = platform.platform().startswith('Windows')
 osx = platform.platform().startswith(
@@ -25,18 +24,6 @@ else:
 flutter_build_dir_2 = f'flutter/{flutter_build_dir}'
 skip_cargo = False
 
-
-def get_deb_arch() -> str:
-    custom_arch = os.environ.get("DEB_ARCH")
-    if custom_arch is None:
-        return "amd64"
-    return custom_arch
-
-def get_deb_extra_depends() -> str:
-    custom_arch = os.environ.get("DEB_ARCH")
-    if custom_arch == "armhf": # for arm32v7 libsciter-gtk.so
-        return ", libatomic1"
-    return ""
 
 def system2(cmd):
     exit_code = os.system(cmd)
@@ -140,10 +127,6 @@ def make_parser():
             action='store_true',
             help='Skip packing, only flutter version + Windows supported'
         )
-    parser.add_argument(
-        "--package",
-        type=str
-    )
     if osx:
         parser.add_argument(
             '--screencapturekit',
@@ -290,117 +273,10 @@ def get_features(args):
     return features
 
 
-def generate_control_file(version):
-    control_file_path = "../res/DEBIAN/control"
-    system2('/bin/rm -rf %s' % control_file_path)
-
-    content = """Package: rustdesk
-Section: net
-Priority: optional
-Version: %s
-Architecture: %s
-Maintainer: rustdesk <info@rustdesk.com>
-Homepage: https://rustdesk.com
-Depends: libgtk-3-0, libxcb-randr0, libxdo3 | libxdo4, libxfixes3, libxcb-shape0, libxcb-xfixes0, libasound2, libsystemd0, curl, libva2, libva-drm2, libva-x11-2, libgstreamer-plugins-base1.0-0, libpam0g, gstreamer1.0-pipewire%s
-Recommends: libayatana-appindicator3-1
-Description: A remote control software.
-
-""" % (version, get_deb_arch(), get_deb_extra_depends())
-    file = open(control_file_path, "w")
-    file.write(content)
-    file.close()
-
-
 def ffi_bindgen_function_refactor():
     # workaround ffigen
     system2(
         'sed -i "s/ffi.NativeFunction<ffi.Bool Function(DartPort/ffi.NativeFunction<ffi.Uint8 Function(DartPort/g" flutter/lib/generated_bridge.dart')
-
-
-def build_flutter_deb(version, features):
-    if not skip_cargo:
-        system2(f'cargo build --features {features} --lib --release')
-        ffi_bindgen_function_refactor()
-    os.chdir('flutter')
-    system2('flutter build linux --release')
-    system2('mkdir -p tmpdeb/usr/bin/')
-    system2('mkdir -p tmpdeb/usr/share/rustdesk')
-    system2('mkdir -p tmpdeb/etc/rustdesk/')
-    system2('mkdir -p tmpdeb/etc/pam.d/')
-    system2('mkdir -p tmpdeb/usr/share/rustdesk/files/systemd/')
-    system2('mkdir -p tmpdeb/usr/share/icons/hicolor/256x256/apps/')
-    system2('mkdir -p tmpdeb/usr/share/icons/hicolor/scalable/apps/')
-    system2('mkdir -p tmpdeb/usr/share/applications/')
-    system2('mkdir -p tmpdeb/usr/share/polkit-1/actions')
-    system2('rm tmpdeb/usr/bin/rustdesk || true')
-    system2(
-        f'cp -r {flutter_build_dir}/* tmpdeb/usr/share/rustdesk/')
-    system2(
-        'cp ../res/rustdesk.service tmpdeb/usr/share/rustdesk/files/systemd/')
-    system2(
-        'cp ../res/128x128@2x.png tmpdeb/usr/share/icons/hicolor/256x256/apps/rustdesk.png')
-    system2(
-        'cp ../res/scalable.svg tmpdeb/usr/share/icons/hicolor/scalable/apps/rustdesk.svg')
-    system2(
-        'cp ../res/rustdesk.desktop tmpdeb/usr/share/applications/rustdesk.desktop')
-    system2(
-        'cp ../res/rustdesk-link.desktop tmpdeb/usr/share/applications/rustdesk-link.desktop')
-    system2(
-        'cp ../res/startwm.sh tmpdeb/etc/rustdesk/')
-    system2(
-        'cp ../res/xorg.conf tmpdeb/etc/rustdesk/')
-    system2(
-        'cp ../res/pam.d/rustdesk.debian tmpdeb/etc/pam.d/rustdesk')
-    system2(
-        "echo \"#!/bin/sh\" >> tmpdeb/usr/share/rustdesk/files/polkit && chmod a+x tmpdeb/usr/share/rustdesk/files/polkit")
-
-    system2('mkdir -p tmpdeb/DEBIAN')
-    generate_control_file(version)
-    system2('cp -a ../res/DEBIAN/* tmpdeb/DEBIAN/')
-    md5_file_folder("tmpdeb/")
-    system2('dpkg-deb -b tmpdeb rustdesk.deb;')
-
-    system2('/bin/rm -rf tmpdeb/')
-    system2('/bin/rm -rf ../res/DEBIAN/control')
-    os.rename('rustdesk.deb', '../rustdesk-%s.deb' % version)
-    os.chdir("..")
-
-
-def build_deb_from_folder(version, binary_folder):
-    os.chdir('flutter')
-    system2('mkdir -p tmpdeb/usr/bin/')
-    system2('mkdir -p tmpdeb/usr/share/rustdesk')
-    system2('mkdir -p tmpdeb/usr/share/rustdesk/files/systemd/')
-    system2('mkdir -p tmpdeb/usr/share/icons/hicolor/256x256/apps/')
-    system2('mkdir -p tmpdeb/usr/share/icons/hicolor/scalable/apps/')
-    system2('mkdir -p tmpdeb/usr/share/applications/')
-    system2('mkdir -p tmpdeb/usr/share/polkit-1/actions')
-    system2('rm tmpdeb/usr/bin/rustdesk || true')
-    system2(
-        f'cp -r ../{binary_folder}/* tmpdeb/usr/share/rustdesk/')
-    system2(
-        'cp ../res/rustdesk.service tmpdeb/usr/share/rustdesk/files/systemd/')
-    system2(
-        'cp ../res/128x128@2x.png tmpdeb/usr/share/icons/hicolor/256x256/apps/rustdesk.png')
-    system2(
-        'cp ../res/scalable.svg tmpdeb/usr/share/icons/hicolor/scalable/apps/rustdesk.svg')
-    system2(
-        'cp ../res/rustdesk.desktop tmpdeb/usr/share/applications/rustdesk.desktop')
-    system2(
-        'cp ../res/rustdesk-link.desktop tmpdeb/usr/share/applications/rustdesk-link.desktop')
-    system2(
-        "echo \"#!/bin/sh\" >> tmpdeb/usr/share/rustdesk/files/polkit && chmod a+x tmpdeb/usr/share/rustdesk/files/polkit")
-
-    system2('mkdir -p tmpdeb/DEBIAN')
-    generate_control_file(version)
-    system2('cp -a ../res/DEBIAN/* tmpdeb/DEBIAN/')
-    md5_file_folder("tmpdeb/")
-    system2('dpkg-deb -b tmpdeb rustdesk.deb;')
-
-    system2('/bin/rm -rf tmpdeb/')
-    system2('/bin/rm -rf ../res/DEBIAN/control')
-    os.rename('rustdesk.deb', '../rustdesk-%s.deb' % version)
-    os.chdir("..")
 
 
 def build_flutter_dmg(version, features):
@@ -482,10 +358,6 @@ def main():
     if args.skip_cargo:
         skip_cargo = True
     portable = args.portable
-    package = args.package
-    if package:
-        build_deb_from_folder(version, package)
-        return
     res_dir = 'resources'
     external_resources(flutter, args, res_dir)
     if windows:
@@ -555,9 +427,12 @@ def main():
                 build_flutter_dmg(version, features)
                 pass
             else:
-                # system2(
-                #     'mv target/release/bundle/deb/rustdesk*.deb ./flutter/rustdesk.deb')
-                build_flutter_deb(version, features)
+                if not skip_cargo:
+                    system2(f'cargo build --features {features} --lib --release')
+                    ffi_bindgen_function_refactor()
+                os.chdir('flutter')
+                system2('flutter build linux --release')
+                os.chdir('..')
         else:
             system2('cargo bundle --release --features ' + features)
             if osx:
@@ -600,49 +475,8 @@ def main():
                 else:
                     print('Not signed')
             else:
-                # build deb package
-                system2(
-                    'mv target/release/bundle/deb/rustdesk*.deb ./rustdesk.deb')
-                system2('dpkg-deb -R rustdesk.deb tmpdeb')
-                system2('mkdir -p tmpdeb/usr/share/rustdesk/files/systemd/')
-                system2('mkdir -p tmpdeb/usr/share/icons/hicolor/256x256/apps/')
-                system2('mkdir -p tmpdeb/usr/share/icons/hicolor/scalable/apps/')
-                system2(
-                    'cp res/rustdesk.service tmpdeb/usr/share/rustdesk/files/systemd/')
-                system2(
-                    'cp res/128x128@2x.png tmpdeb/usr/share/icons/hicolor/256x256/apps/rustdesk.png')
-                system2(
-                    'cp res/scalable.svg tmpdeb/usr/share/icons/hicolor/scalable/apps/rustdesk.svg')
-                system2(
-                    'cp res/rustdesk.desktop tmpdeb/usr/share/applications/rustdesk.desktop')
-                system2(
-                    'cp res/rustdesk-link.desktop tmpdeb/usr/share/applications/rustdesk-link.desktop')
-                os.system('mkdir -p tmpdeb/etc/rustdesk/')
-                os.system('cp -a res/startwm.sh tmpdeb/etc/rustdesk/')
-                os.system('mkdir -p tmpdeb/etc/X11/rustdesk/')
-                os.system('cp res/xorg.conf tmpdeb/etc/X11/rustdesk/')
-                os.system('cp -a DEBIAN/* tmpdeb/DEBIAN/')
-                os.system('mkdir -p tmpdeb/etc/pam.d/')
-                os.system('cp pam.d/rustdesk.debian tmpdeb/etc/pam.d/rustdesk')
-                system2('strip tmpdeb/usr/bin/rustdesk')
-                system2('mkdir -p tmpdeb/usr/share/rustdesk')
-                system2('mv tmpdeb/usr/bin/rustdesk tmpdeb/usr/share/rustdesk/')
-                system2('cp libsciter-gtk.so tmpdeb/usr/share/rustdesk/')
-                md5_file_folder("tmpdeb/")
-                system2('dpkg-deb -b tmpdeb rustdesk.deb; /bin/rm -rf tmpdeb/')
-                os.rename('rustdesk.deb', 'rustdesk-%s.deb' % version)
-
-
-def md5_file(fn):
-    md5 = hashlib.md5(open('tmpdeb/' + fn, 'rb').read()).hexdigest()
-    system2('echo "%s  /%s" >> tmpdeb/DEBIAN/md5sums' % (md5, fn))
-
-def md5_file_folder(base_dir):
-    base_path = Path(base_dir)
-    for file in base_path.rglob('*'):
-        if file.is_file() and 'DEBIAN' not in file.parts:
-            relative_path = file.relative_to(base_path)
-            md5_file(str(relative_path))
+                system2('cargo bundle --release --features ' + features)
+                system2('strip target/release/rustdesk')
 
 
 if __name__ == "__main__":
