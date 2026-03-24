@@ -40,7 +40,7 @@ jobs:
     uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
     with:
       upload-artifact: ${{ inputs.upload-artifact }}
-      target: self-hosted
+      target: Windows
       configuration: Release
       platform: x64
       target_version: Windows10
