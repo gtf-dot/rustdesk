@@ -37,10 +37,9 @@ jobs:
     uses: ./.github/workflows/bridge.yml
 
   build-RustDeskTempTopMostWindow:
-    uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
+    uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow-selfhost.yml
     with:
       upload-artifact: ${{ inputs.upload-artifact }}
-      target: Windows
       configuration: Release
       platform: x64
       target_version: Windows10
