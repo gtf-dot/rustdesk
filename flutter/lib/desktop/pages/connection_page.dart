@@ -35,6 +35,7 @@ class OnlineStatusWidget extends StatefulWidget {
 class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
   final _svcStopped = Get.find<RxBool>(tag: 'stop-service');
   final _svcIsUsingPublicServer = true.obs;
+  final _myId = ''.obs;
   Timer? _updateTimer;
 
   double get em => 14.0;
@@ -133,7 +134,6 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
             if (!isIncomingOnly) startServiceWidget(),
             // ready && public
             // No need to show the guide if is custom client.
-            if (!isIncomingOnly) setupServerWidget(),
           ],
         );
 
@@ -162,7 +162,7 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
               ? translate("connecting_status")
               : stateGlobal.svcStatus.value == SvcStatus.notReady
                   ? translate("not_ready_status")
-                  : translate('Ready'),
+                  : '${translate('Ready')}${_myId.value.isNotEmpty ? ' - ${_myId.value}' : ''}',
       style: TextStyle(fontSize: em),
     );
   }
@@ -181,6 +181,7 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
       stateGlobal.svcStatus.value = SvcStatus.notReady;
     }
     _svcIsUsingPublicServer.value = await bind.mainIsUsingPublicServer();
+    _myId.value = await bind.mainGetMyId();
     try {
       stateGlobal.videoConnCount.value = status['video_conn_count'] as int;
     } catch (_) {}
