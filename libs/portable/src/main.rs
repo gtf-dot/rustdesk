@@ -132,25 +132,48 @@ fn is_windows_7() -> bool {
     false
 }
 
+fn is_cli_command(args: &[String]) -> bool {
+    if args.is_empty() {
+        return false;
+    }
+    // Commands that print output and exit immediately.
+    // These need a console and the launcher must wait for them.
+    matches!(
+        args[0].as_str(),
+        "--version"
+            | "--build-date"
+            | "--get-id"
+            | "--set-id"
+            | "--password"
+            | "--set-unlock-pin"
+            | "--get-option"
+            | "--config"
+            | "--assign"
+    )
+}
+
 fn execute(path: PathBuf, args: Vec<String>, _ui: bool) {
     println!("executing {}", path.display());
+    let cli = is_cli_command(&args);
     // setup env
     let exe = std::env::current_exe().unwrap_or_default();
     let exe_name = exe.file_name().unwrap_or_default();
     // run executable
     let mut cmd = Command::new(path);
-    cmd.args(args);
+    cmd.args(&args);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        cmd.creation_flags(winapi::um::winbase::CREATE_NO_WINDOW);
+        if !cli {
+            cmd.creation_flags(winapi::um::winbase::CREATE_NO_WINDOW);
+        }
         if _ui {
             cmd.env(SET_FOREGROUND_WINDOW_ENV_KEY, "1");
         }
     }
 
     cmd.env(APPNAME_RUNTIME_ENV_KEY, exe_name);
-    if use_null_stdio() {
+    if !cli && use_null_stdio() {
         cmd.stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null());
@@ -159,6 +182,13 @@ fn execute(path: PathBuf, args: Vec<String>, _ui: bool) {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit());
     }
+
+    if cli {
+        // CLI commands print output and exit — wait for the child so output is visible.
+        let _ = cmd.status();
+        return;
+    }
+
     let _child = cmd.spawn();
 
     #[cfg(windows)]
