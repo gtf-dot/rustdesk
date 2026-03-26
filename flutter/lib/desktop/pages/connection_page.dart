@@ -36,6 +36,7 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
   final _svcStopped = Get.find<RxBool>(tag: 'stop-service');
   final _svcIsUsingPublicServer = true.obs;
   final _myId = ''.obs;
+  final _rendezvousServer = ''.obs;
   Timer? _updateTimer;
 
   double get em => 14.0;
@@ -155,16 +156,21 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
 
   _buildConnStatusMsg() {
     widget.onSvcStatusChanged?.call();
-    return Text(
-      _svcStopped.value
-          ? translate("Service is not running")
-          : stateGlobal.svcStatus.value == SvcStatus.connecting
-              ? translate("connecting_status")
-              : stateGlobal.svcStatus.value == SvcStatus.notReady
-                  ? translate("not_ready_status")
-                  : '${translate('Ready')}${_myId.value.isNotEmpty ? ' - ${_myId.value}' : ''}',
-      style: TextStyle(fontSize: em),
-    );
+    final text = _svcStopped.value
+        ? translate("Service is not running")
+        : stateGlobal.svcStatus.value == SvcStatus.connecting
+            ? translate("connecting_status")
+            : stateGlobal.svcStatus.value == SvcStatus.notReady
+                ? translate("not_ready_status")
+                : '${translate('Ready')}${_rendezvousServer.value.isNotEmpty ? ' @ ${_rendezvousServer.value}' : ''}';
+    final widget_ = Text(text, style: TextStyle(fontSize: em));
+    if (_myId.value.isNotEmpty) {
+      return Tooltip(
+        message: _myId.value,
+        child: widget_,
+      );
+    }
+    return widget_;
   }
 
   updateStatus() async {
@@ -182,6 +188,9 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
     }
     _svcIsUsingPublicServer.value = await bind.mainIsUsingPublicServer();
     _myId.value = await bind.mainGetMyId();
+    final server = await bind.mainGetOption(key: 'rendezvous-server');
+    final idx = server.lastIndexOf(':');
+    _rendezvousServer.value = idx > 0 ? server.substring(0, idx) : server;
     try {
       stateGlobal.videoConnCount.value = status['video_conn_count'] as int;
     } catch (_) {}
