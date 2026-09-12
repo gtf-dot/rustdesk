@@ -23,6 +23,9 @@ sed -i '' -e "s/platform :osx, '.*'/platform :osx, '${MIN_MACOS_VERSION}'/" flut
 sed -i '' -e "s/osx_minimum_system_version = \"[0-9]*.[0-9]*\"/osx_minimum_system_version = \"${MIN_MACOS_VERSION}\"/" Cargo.toml
 sed -i '' -e "s/MACOSX_DEPLOYMENT_TARGET = [0-9]*.[0-9]*;/MACOSX_DEPLOYMENT_TARGET = ${MIN_MACOS_VERSION};/" flutter/macos/Runner.xcodeproj/project.pbxproj
 
+# submodules, vcpkg ports, Flutter patch, pub get and bridge glue (shared with build_linux.sh)
+. ./build_prepare.sh
+
 python3 build.py --flutter --hwcodec --unix-file-copy-paste --screencapturekit "$@"
 
 # Xcode leaves the main binary ad-hoc signed while FlutterMacOS.framework keeps its upstream signature,
