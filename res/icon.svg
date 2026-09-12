@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Vector recreation of res/icon.ico (32px eye) so macOS/Linux can get crisp large icons. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="1024" height="1024">
   <circle cx="16" cy="16" r="16" fill="#000000"/>
   <circle cx="16" cy="16" r="10.25" fill="#FCDD00"/>
   <circle cx="16" cy="16" r="4.4" fill="#000000"/>
