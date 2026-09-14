@@ -122,7 +122,7 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
               color: Theme.of(context).hintColor,
             ).paddingAll(2),
           ),
-        ).marginOnly(left: 6);
+        ).marginOnly(left: 6, right: isIncomingOnly ? 0 : em);
 
     basicWidget() => Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -140,13 +140,11 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
                         : Color.fromARGB(255, 224, 79, 95)),
               ),
             ).marginSymmetric(horizontal: em),
-            Container(
-              width: isIncomingOnly ? 226 - 22 : null,
-              child: _buildConnStatusMsg(),
-            ),
-            aboutButton(),
+            // Take the free width so the info button sits in the right corner.
+            Expanded(child: _buildConnStatusMsg()),
             // stop
             if (!isIncomingOnly) startServiceWidget(),
+            aboutButton(),
             // ready && public
             // No need to show the guide if is custom client.
           ],

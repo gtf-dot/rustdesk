@@ -11,7 +11,7 @@ import '../../models/platform_model.dart';
 // 5d), and where to get the corresponding source (sections 6 and 13).
 // The full license text ships with every build as assets/LICENCE.
 const kUpstreamCopyrightHolder = 'Purslane Tech Pte. Ltd.';
-const kModificationsCopyrightHolder = 'Grisas';
+const kModificationsCopyrightHolder = 'GRI SAS';
 const kSourceCodeUrl = 'https://github.com/gtf-dot/rustdesk';
 const kLicenseUrl = 'https://www.gnu.org/licenses/agpl-3.0.html';
 
