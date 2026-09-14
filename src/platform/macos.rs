@@ -27,6 +27,7 @@ use include_dir::{include_dir, Dir};
 use objc::rc::autoreleasepool;
 use objc::{class, msg_send, sel, sel_impl};
 use scrap::{libc::c_void, quartz::ffi::*};
+use std::os::unix::fs::PermissionsExt;
 use std::{
     collections::HashMap,
     os::unix::process::CommandExt,
@@ -180,7 +181,138 @@ fn unsafe_is_can_screen_recording(prompt: bool) -> bool {
 }
 
 pub fn install_service() -> bool {
-    is_installed_daemon(false)
+    // Reached from `--install-service`. The GUI path (`is_installed_daemon(true)`) asks for an admin
+    // password through osascript; here we are on a terminal, so do the same work directly when root.
+    if !is_effective_root() {
+        let exe = std::env::current_exe()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_else(|_| crate::get_app_name());
+        println!("--install-service needs root privileges, run: sudo \"{exe}\" --install-service");
+        return is_installed_daemon(false);
+    }
+    match install_service_as_root() {
+        Ok(()) => {
+            println!("Service installed");
+            true
+        }
+        Err(e) => {
+            log::error!("Failed to install service: {e}");
+            println!("Failed to install service: {e}");
+            false
+        }
+    }
+}
+
+#[inline]
+fn is_effective_root() -> bool {
+    unsafe { hbb_common::libc::geteuid() == 0 }
+}
+
+fn privileges_script(name: &str) -> ResultType<String> {
+    PRIVILEGES_SCRIPTS_DIR
+        .get_file(name)
+        .and_then(|f| f.contents_utf8())
+        .map(correct_app_name)
+        .ok_or_else(|| anyhow!("embedded {name} not found"))
+}
+
+fn daemon_plist_path() -> String {
+    format!("/Library/LaunchDaemons/{}_service.plist", crate::get_full_name())
+}
+
+fn agent_plist_path() -> String {
+    format!("/Library/LaunchAgents/{}_server.plist", crate::get_full_name())
+}
+
+/// The user the service should be installed for: the one behind `sudo`, else the console user.
+fn install_target_user() -> (String, String) {
+    let user = std::env::var("SUDO_USER")
+        .ok()
+        .filter(|u| !u.is_empty() && u != "root")
+        .unwrap_or_else(get_active_username);
+    let uid = std::process::Command::new("id")
+        .args(["-u", &user])
+        .output()
+        .ok()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+        .unwrap_or_default();
+    (user, uid)
+}
+
+fn launchctl(args: &[&str]) -> ResultType<()> {
+    let status = std::process::Command::new("launchctl").args(args).status()?;
+    if !status.success() {
+        bail!("launchctl {} failed with {status}", args.join(" "));
+    }
+    Ok(())
+}
+
+/// Headless equivalent of `install.scpt`: write the LaunchDaemon and LaunchAgent plists, seed root's
+/// config from the installing user's, and load both. Must run as root.
+fn install_service_as_root() -> ResultType<()> {
+    let app_name = crate::get_app_name();
+    let service_bin = format!("/Applications/{app_name}.app/Contents/MacOS/service");
+    if !Path::new(&service_bin).exists() {
+        bail!("{service_bin} not found, install the app into /Applications first (e.g. --silent-install)");
+    }
+
+    for (file, body) in [
+        (daemon_plist_path(), privileges_script("daemon.plist")?),
+        (agent_plist_path(), privileges_script("agent.plist")?),
+    ] {
+        std::fs::write(&file, body)?;
+        std::os::unix::fs::chown(&file, Some(0), Some(0))?; // root:wheel
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o644))?;
+        log::info!("wrote {file}");
+    }
+
+    // The daemon reads root's config; seed it from the installing user's so the ID, key pair and
+    // server settings carry over. Existing root files are kept (e.g. a password set with --password).
+    let (user, uid) = install_target_user();
+    let full_name = crate::get_full_name();
+    let src_dir = PathBuf::from(format!("/Users/{user}/Library/Preferences/{full_name}"));
+    let dst_dir = PathBuf::from(format!("/var/root/Library/Preferences/{full_name}"));
+    std::fs::create_dir_all(&dst_dir)?;
+    for name in [format!("{app_name}.toml"), format!("{app_name}2.toml")] {
+        let (src, dst) = (src_dir.join(&name), dst_dir.join(&name));
+        if dst.exists() {
+            log::info!("keeping existing {}", dst.display());
+        } else if src.exists() {
+            std::fs::copy(&src, &dst)?;
+            log::info!("copied {} -> {}", src.display(), dst.display());
+        }
+    }
+
+    launchctl(&["load", "-w", &daemon_plist_path()])?;
+
+    // Load the per-session agent into the user's GUI session if there is one; otherwise launchd
+    // starts it at the next login (RunAtLoad).
+    if uid.is_empty() {
+        log::warn!("no uid for user {user}, agent will start at next login");
+    } else {
+        let domain = format!("gui/{uid}");
+        launchctl(&["enable", &format!("{domain}/{full_name}_server")]).ok();
+        if let Err(e) = launchctl(&["bootstrap", &domain, &agent_plist_path()]) {
+            log::warn!("agent not started now ({e}), it will start at next login");
+        }
+    }
+    Ok(())
+}
+
+/// Headless equivalent of `uninstall.scpt`. Must run as root.
+fn uninstall_service_as_root() -> ResultType<()> {
+    let full_name = crate::get_full_name();
+    let (_, uid) = install_target_user();
+    if !uid.is_empty() {
+        launchctl(&["bootout", &format!("gui/{uid}/{full_name}_server")]).ok();
+    }
+    launchctl(&["unload", "-w", &daemon_plist_path()]).ok();
+    for file in [daemon_plist_path(), agent_plist_path()] {
+        if Path::new(&file).exists() {
+            std::fs::remove_file(&file)?;
+        }
+    }
+    Ok(())
 }
 
 // Remember to check if `update_daemon_agent()` need to be changed if changing `is_installed_daemon()`.
@@ -316,6 +448,19 @@ pub fn uninstall_service(show_new_window: bool, sync: bool) -> bool {
     // to-do: do together with win/linux about refactory start/stop service
     if !is_installed_daemon(false) {
         return false;
+    }
+    if is_effective_root() {
+        return match uninstall_service_as_root() {
+            Ok(()) => {
+                println!("Service uninstalled");
+                true
+            }
+            Err(e) => {
+                log::error!("Failed to uninstall service: {e}");
+                println!("Failed to uninstall service: {e}");
+                false
+            }
+        };
     }
 
     let Some(script_file) = PRIVILEGES_SCRIPTS_DIR.get_file("uninstall.scpt") else {
