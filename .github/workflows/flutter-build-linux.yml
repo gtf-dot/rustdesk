@@ -273,7 +273,7 @@ jobs:
             export CARGO_INCREMENTAL=0
             export DEB_ARCH=${{ matrix.job.deb_arch }}
             python3 ./build.py --flutter --skip-cargo
-            for name in rustdesk*??.deb; do
+            for name in horusrd*??.deb; do
               mv "$name" "${name%%.deb}-${{ matrix.job.arch }}.deb"
             done
 
@@ -284,14 +284,14 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            rustdesk-*.deb
+            horusrd-*.deb
 
       - name: Upload deb
         uses: actions/upload-artifact@master
         if: env.UPLOAD_ARTIFACT == 'true'
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
-          path: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
+          name: horusrd-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
+          path: horusrd-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
 
       - name: Upload rustdesk bundle
         uses: actions/upload-artifact@master
@@ -320,12 +320,12 @@ jobs:
       - name: Download Binary
         uses: actions/download-artifact@master
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
+          name: horusrd-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
           path: .
 
       - name: Rename Binary
         run: |
-          mv rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb appimage/rustdesk.deb
+          mv horusrd-${{ env.VERSION }}-${{ matrix.job.arch }}.deb appimage/horusrd.deb
 
       - name: Build appimage package
         shell: bash
@@ -348,11 +348,11 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ./appimage/rustdesk-${{ env.VERSION }}-*.AppImage
+            ./appimage/horusrd-${{ env.VERSION }}-*.AppImage
 
       - name: Upload AppImage
         uses: actions/upload-artifact@master
         if: env.UPLOAD_ARTIFACT == 'true'
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.AppImage
-          path: ./appimage/rustdesk-${{ env.VERSION }}-*.AppImage
+          name: horusrd-${{ env.VERSION }}-${{ matrix.job.arch }}.AppImage
+          path: ./appimage/horusrd-${{ env.VERSION }}-*.AppImage

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=HorusRD
+NoDisplay=true
+MimeType=x-scheme-handler/horusrd;
+TryExec=horusrd
+Exec=horusrd %u
+Icon=horusrd
+Terminal=false
+Type=Application
+StartupNotify=false
+StartupWMClass=horusrd
