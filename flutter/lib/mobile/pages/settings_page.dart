@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common/widgets/legal_notice.dart';
 import 'package:flutter_hbb/common/widgets/setting_widgets.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
 import 'package:get/get.dart';
@@ -1172,21 +1173,26 @@ void showAbout(OverlayDialogManager dialogManager) {
   dialogManager.show((setState, close, context) {
     return CustomAlertDialog(
       title: Text(translate('About RustDesk')),
-      content: Wrap(direction: Axis.vertical, spacing: 12, children: [
-        Text('Version: $version'),
-        InkWell(
-            onTap: () async {
-              const url = 'https://rustdesk.com/';
-              await launchUrl(Uri.parse(url));
-            },
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('rustdesk.com',
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                  )),
-            )),
-      ]),
+      content: SingleChildScrollView(
+          child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+            Text('Version: $version'),
+            InkWell(
+                onTap: () async {
+                  const url = 'https://rustdesk.com/';
+                  await launchUrl(Uri.parse(url));
+                },
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('rustdesk.com',
+                      style: TextStyle(
+                        decoration: TextDecoration.underline,
+                      )),
+                )),
+            const LegalNoticeBox().marginOnly(top: 12),
+          ])),
       actions: [],
     );
   }, clickMaskDismiss: true, backDismiss: true);

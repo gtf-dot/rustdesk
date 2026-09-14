@@ -1,0 +1,18 @@
+HorusRD
+Copyright (C) 2026 Purslane Tech Pte. Ltd.
+Copyright (C) 2026 Grisas
+
+HorusRD is a modified version of RustDesk (https://github.com/rustdesk/rustdesk).
+It was changed by Grisas starting in 2026: renamed and rebranded to HorusRD,
+with new icons, a reduced user interface, build-time configuration of the
+rendezvous server and key, and adjusted build and packaging scripts. See the
+git history of https://github.com/gtf-dot/rustdesk for the full list of changes.
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, version 3. It is distributed WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. See the LICENCE file for details.
+
+Corresponding source code: https://github.com/gtf-dot/rustdesk
+(hbb_common submodule: https://github.com/gtf-dot/hbb_common)

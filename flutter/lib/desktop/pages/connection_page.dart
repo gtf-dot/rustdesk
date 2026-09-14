@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_hbb/common/widgets/legal_notice.dart';
 import 'package:flutter_hbb/common/widgets/connection_page_title.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/widgets/popup_menu.dart';
@@ -172,43 +173,25 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
     final buildDate = await bind.mainGetBuildDate();
     final license = await bind.mainGetLicense();
     final myId = await bind.mainGetMyId();
-    final year = DateTime.now().toString().substring(0, 4);
     gFFI.dialogManager.show((setState, close, context) {
       return CustomAlertDialog(
         title: Text(translate('About RustDesk')),
         content: SelectionArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('${translate('Version')}: $version')
-                  .marginSymmetric(vertical: 4.0),
-              Text('${translate('Build Date')}: $buildDate')
-                  .marginSymmetric(vertical: 4.0),
-              if (myId.isNotEmpty)
-                Text('${translate('ID')}: $myId')
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${translate('Version')}: $version')
                     .marginSymmetric(vertical: 4.0),
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(color: Color(0xFF2c8cff)),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Copyright © $year Purslane Tech Pte. Ltd.\n$license',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    Text(
-                      translate('Slogan_tip'),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w800, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ).marginOnly(top: 8.0),
-            ],
+                Text('${translate('Build Date')}: $buildDate')
+                    .marginSymmetric(vertical: 4.0),
+                if (myId.isNotEmpty)
+                  Text('${translate('ID')}: $myId')
+                      .marginSymmetric(vertical: 4.0),
+                LegalNoticeBox(license: license).marginOnly(top: 8.0),
+              ],
+            ),
           ),
         ),
         actions: [dialogButton('OK', onPressed: close)],

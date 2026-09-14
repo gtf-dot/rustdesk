@@ -2,7 +2,7 @@ Name:       rustdesk
 Version:    1.5.0
 Release:    0
 Summary:    RPM package
-License:    GPL-3.0
+License:    AGPL-3.0-only
 URL:        https://rustdesk.com
 Vendor:     rustdesk <info@rustdesk.com>
 Requires:   gtk3 libxcb libXfixes alsa-lib libva2 gstreamer1-plugins-base
