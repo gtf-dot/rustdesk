@@ -110,6 +110,19 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
           ),
         );
 
+    aboutButton() => Tooltip(
+          message: translate('About RustDesk'),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: _showAbout,
+            child: Icon(
+              Icons.info_outline,
+              size: em + 2,
+              color: Theme.of(context).hintColor,
+            ).paddingAll(2),
+          ),
+        ).marginOnly(left: 6);
+
     basicWidget() => Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -127,9 +140,10 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
               ),
             ).marginSymmetric(horizontal: em),
             Container(
-              width: isIncomingOnly ? 226 : null,
+              width: isIncomingOnly ? 226 - 22 : null,
               child: _buildConnStatusMsg(),
             ),
+            aboutButton(),
             // stop
             if (!isIncomingOnly) startServiceWidget(),
             // ready && public
@@ -151,6 +165,57 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
             )
           : basicWidget()),
     ).paddingOnly(right: isIncomingOnly ? 8 : 0);
+  }
+
+  void _showAbout() async {
+    final version = await bind.mainGetVersion();
+    final buildDate = await bind.mainGetBuildDate();
+    final license = await bind.mainGetLicense();
+    final myId = await bind.mainGetMyId();
+    final year = DateTime.now().toString().substring(0, 4);
+    gFFI.dialogManager.show((setState, close, context) {
+      return CustomAlertDialog(
+        title: Text(translate('About RustDesk')),
+        content: SelectionArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${translate('Version')}: $version')
+                  .marginSymmetric(vertical: 4.0),
+              Text('${translate('Build Date')}: $buildDate')
+                  .marginSymmetric(vertical: 4.0),
+              if (myId.isNotEmpty)
+                Text('${translate('ID')}: $myId')
+                    .marginSymmetric(vertical: 4.0),
+              Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(color: Color(0xFF2c8cff)),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Copyright © $year Purslane Tech Pte. Ltd.\n$license',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      translate('Slogan_tip'),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ).marginOnly(top: 8.0),
+            ],
+          ),
+        ),
+        actions: [dialogButton('OK', onPressed: close)],
+        onSubmit: close,
+        onCancel: close,
+      );
+    }, clickMaskDismiss: true, backDismiss: true);
   }
 
   _buildConnStatusMsg() {
