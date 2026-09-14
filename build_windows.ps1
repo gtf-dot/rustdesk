@@ -7,7 +7,7 @@ One-time prereqs, run from a "Developer PowerShell for VS" (MSVC C++ tools on PA
   - Rust 1.75 via rustup            https://rustup.rs
   - Flutter 3.24.5 on PATH          https://docs.flutter.dev/get-started/install/windows
   - LLVM 15 at C:\Program Files\LLVM (or set $env:LLVM_PATH)
-  - vcpkg at C:\vcpkg (or set $env:VCPKG_ROOT), bootstrapped, at commit 120deac3
+  - vcpkg at C:\vcpkg (or set $env:VCPKG_ROOT), bootstrapped, at commit 9e593bb1
   - Python 3, git, CMake, Ninja, NASM on PATH
 Output: flutter\build\windows\x64\runner\Release\
 #>

@@ -59,3 +59,6 @@ flutter/web/
 
 # FVM Version Cache
 .fvm/
+
+# libdrmtap is cloned at build time by build.py (not a submodule)
+/third_party/libdrmtap/

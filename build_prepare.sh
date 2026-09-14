@@ -27,7 +27,7 @@ need flutter "Install Flutter $FLUTTER_VERSION and put flutter/bin on PATH"
 need python3 "Install Python 3"
 need git "Install git"
 [ -x "$VCPKG_ROOT/vcpkg" ] || {
-    echo "error: vcpkg not found at \$VCPKG_ROOT=$VCPKG_ROOT (clone microsoft/vcpkg at commit 120deac3 and bootstrap it)" >&2
+    echo "error: vcpkg not found at \$VCPKG_ROOT=$VCPKG_ROOT (clone microsoft/vcpkg at commit 9e593bb1 and bootstrap it)" >&2
     exit 1
 }
 
