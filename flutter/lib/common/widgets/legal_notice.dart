@@ -18,18 +18,66 @@ const kLicenseUrl = 'https://www.gnu.org/licenses/agpl-3.0.html';
 class LegalNoticeBox extends StatelessWidget {
   final String license;
 
-  const LegalNoticeBox({Key? key, this.license = ''}) : super(key: key);
+  /// Short layout that fits the fixed 400x300 main window without scrolling.
+  final bool compact;
+
+  /// Shown next to the app name in the compact layout.
+  final String version;
+
+  /// Defaults to the app name reported by the Rust core.
+  final String? appName;
+
+  const LegalNoticeBox(
+      {Key? key,
+      this.license = '',
+      this.compact = false,
+      this.version = '',
+      this.appName})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final year = DateTime.now().year;
-    const white = TextStyle(color: Colors.white);
-    const link =
-        TextStyle(color: Colors.white, decoration: TextDecoration.underline);
+    final name = appName ?? bind.mainGetAppNameSync();
+    final white = TextStyle(color: Colors.white, fontSize: compact ? 12 : null);
+    final link = white.copyWith(decoration: TextDecoration.underline);
     Widget linkText(String text, String url) => InkWell(
           onTap: () => launchUrlString(url),
           child: Text(text, style: link),
-        ).marginOnly(top: 4);
+        );
+    final copyrights = <Widget>[
+      Text('Copyright © $year $kUpstreamCopyrightHolder', style: white),
+      Text('Copyright © $year $kModificationsCopyrightHolder', style: white),
+      if (license.isNotEmpty) Text(license, style: white),
+    ];
+
+    if (compact) {
+      return Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(color: Color(0xFF2c8cff)),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(version.isEmpty ? name : '$name $version',
+                style: white.copyWith(fontWeight: FontWeight.w700)),
+            ...copyrights,
+            Text(
+              'Modified version of RustDesk. Free software: you may '
+              'redistribute it under the GNU AGPL v3.0. '
+              'ABSOLUTELY NO WARRANTY.',
+              style: white,
+            ).marginOnly(top: 4),
+            Wrap(spacing: 16, children: [
+              linkText('Source code', kSourceCodeUrl),
+              linkText('License', kLicenseUrl),
+            ]).marginOnly(top: 4),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(color: Color(0xFF2c8cff)),
@@ -37,24 +85,21 @@ class LegalNoticeBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Copyright © $year $kUpstreamCopyrightHolder', style: white),
-          Text('Copyright © $year $kModificationsCopyrightHolder',
-              style: white),
-          if (license.isNotEmpty) Text(license, style: white),
+          ...copyrights,
           Text(
-            '${bind.mainGetAppNameSync()} is a modified version of RustDesk, '
-            'changed by $kModificationsCopyrightHolder. It is free software '
-            'licensed under the GNU Affero General Public License v3.0 and '
-            'comes with ABSOLUTELY NO WARRANTY. You may redistribute and '
-            'modify it under the terms of that license.',
+            '$name is a modified version of RustDesk, changed by '
+            '$kModificationsCopyrightHolder. It is free software licensed '
+            'under the GNU Affero General Public License v3.0 and comes with '
+            'ABSOLUTELY NO WARRANTY. You may redistribute and modify it under '
+            'the terms of that license.',
             style: white,
           ).marginOnly(top: 8),
-          linkText('Source code: $kSourceCodeUrl', kSourceCodeUrl),
-          linkText('License: GNU AGPL v3.0', kLicenseUrl),
+          linkText('Source code: $kSourceCodeUrl', kSourceCodeUrl)
+              .marginOnly(top: 4),
+          linkText('License: GNU AGPL v3.0', kLicenseUrl).marginOnly(top: 4),
           Text(
             translate('Slogan_tip'),
-            style: const TextStyle(
-                fontWeight: FontWeight.w800, color: Colors.white),
+            style: white.copyWith(fontWeight: FontWeight.w800),
           ).marginOnly(top: 8),
         ],
       ),

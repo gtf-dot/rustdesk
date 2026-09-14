@@ -168,31 +168,16 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
 
   void _showAbout() async {
     final version = await bind.mainGetVersion();
-    final buildDate = await bind.mainGetBuildDate();
     final license = await bind.mainGetLicense();
-    final myId = await bind.mainGetMyId();
     gFFI.dialogManager.show((setState, close, context) {
+      // The main window is a fixed 400x300, so no title or buttons: the
+      // notice must be fully visible without scrolling. Esc or a click
+      // outside closes it.
       return CustomAlertDialog(
-        title: Text(translate('About RustDesk')),
         content: SelectionArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${translate('Version')}: $version')
-                    .marginSymmetric(vertical: 4.0),
-                Text('${translate('Build Date')}: $buildDate')
-                    .marginSymmetric(vertical: 4.0),
-                if (myId.isNotEmpty)
-                  Text('${translate('ID')}: $myId')
-                      .marginSymmetric(vertical: 4.0),
-                LegalNoticeBox(license: license).marginOnly(top: 8.0),
-              ],
-            ),
-          ),
+          child:
+              LegalNoticeBox(compact: true, version: version, license: license),
         ),
-        actions: [dialogButton('OK', onPressed: close)],
         onSubmit: close,
         onCancel: close,
       );
